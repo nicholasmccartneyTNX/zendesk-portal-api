@@ -9,7 +9,7 @@ var appRouter = function (app) {
         let url = config.ZendeskAPI() + '/search.json?query=tags:dataquality_dataissue'
         
         getTicketsPagination(url)
-        .then (result => parseDQTicketsOverview(result))
+        .then (result => parseTickets(result))
         .then (resolved_result => res.status(200).send(resolved_result))
         .catch (error => res.status(500).send(error))
 
@@ -69,13 +69,13 @@ var appRouter = function (app) {
                 }
                 })
                 .catch(function (){
-                    resolve ("Error getting DQ Tickets")
+                    resolve ("Error getting tickets")
                 });
 
         });
     }
 
-    async function parseDQTicketsOverview(data) {
+    async function parseTickets(data) {
         try{    
             json = data
             let json_resolved = []
@@ -88,6 +88,16 @@ var appRouter = function (app) {
                 status = json[i]["status"]    
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
+
+                if (requester_email == null){
+                    requester_email = "Error finding requester email"
+                }
+
+                if (organization_name == null){
+                    organization_name = "Error finding organization name"
+                }
+                
+
                 json_resolved.push({id, subject, requester_email, organization_name, status})
             }
 
@@ -99,40 +109,105 @@ var appRouter = function (app) {
         
     }
 
-    function getLookupDictionary (data){
+     function getLookupDictionary (data){
 
         return new Promise(resolve => {
 
             json = data
-            let promises = []
-            let ids = []
-            let lookupDictionary = new Object()
+            ticket_ids = []
 
-            for (i = 0; i < json.length; i ++) { 
-                ids.push (json[i]["requester_id"])
-                ids.push (json[i]["organization_id"])
-                promises.push (resolveUserID(json[i]["requester_id"]))
-                promises.push (resolveOrgID(json[i]["organization_id"]))
+            for (i = 0; i < json.length; i ++) {
+                ticket_ids.push(json[i]["id"])
             }
 
-            Promise.all(promises)
-            .then (function(result) {
-                for (j=0; j < result.length; j++){
-                    key = ids[j]
-                    lookupDictionary[key] = result[j]
+            var promise = getUsersOrgs(ticket_ids)
+
+            promise
+            .then(function (result){
+                resolve(result)
+            })
+
+        
+        });
+    }
+
+    function getUsersOrgs(tickets){
+        return new Promise(resolve => {
+            try{
+                ticket_ids = tickets
+                lookup_ticketids = []
+                promises = []
+                lookupDictionary = new Object()
+
+
+                for (i=0; i < ticket_ids.length; i++){
+                    lookup_ticketids.push(ticket_ids[i])
+
+                    if ((i%100)==0 & i!=0){
+                        promises.push(resolveUsersOrgs(config.ZendeskAPI() + '/tickets/show_many.json?ids=' + lookup_ticketids + '&include=users,organizations'))
+                        lookup_ticketids = []
+                    }
                 }
-            })
-            .then(function (){
-                resolve(lookupDictionary)
-            })
-            .catch(function (){
-                resolve ("Error getting DQ Tickets")
-            });
-            
+
+                promises.push(resolveUsersOrgs(config.ZendeskAPI() + '/tickets/show_many.json?ids=' + lookup_ticketids + '&include=users,organizations'))
+
+                
+                Promise.all(promises)
+                .then (function(result) {
+                    for (i=0; i< result.length; i++){
+                        temp_dictionary = result[i]
+                            for (var key in temp_dictionary){
+                                lookupDictionary[key]=temp_dictionary[key]
+                            }
+                    }
+                    resolve(lookupDictionary)
+                })
+                .catch(function (){
+                    resolve ("Error resolving user and org IDs")
+                });
+            }catch (e){
+                return e
+            }
         });
 
     }
 
+    function resolveUsersOrgs (url){
+       return new Promise(resolve => {
+
+            let lookupDictionary = new Object()
+
+            let request_params ={
+                method: 'GET',
+                url: url,
+                headers: {
+                    'Authorization': 'Basic ' + config.ZendeskAPI_Key(),
+                    'Content-Type':  'application/json'
+                }
+            }
+
+
+            axios(request_params)
+            .then(function(response) {
+                let response_json_users = response.data.users
+                let response_json_orgs = response.data.organizations
+                
+                for (i=0; i < response_json_orgs.length; i++){
+                   lookupDictionary[response_json_orgs[i]["id"]] = response_json_orgs[i]["name"]
+                }
+               
+                for (i=0; i < response_json_users.length; i++){
+                    lookupDictionary[response_json_users[i]["id"]] = response_json_users[i]["email"]
+                }
+                resolve(lookupDictionary)
+                })
+                .catch(function (){
+                    resolve ("Error resolving user and org IDs")
+                });
+
+        });
+
+    }
 
     async function parseTicketComments(data) {
         try{
@@ -178,28 +253,6 @@ var appRouter = function (app) {
                 })
         });
     }
-
-    function resolveOrgID(id){
-        return new Promise(resolve => {
-                let request_params = {
-                    method: 'GET',
-                    url: config.ZendeskAPI() + '/organizations/' + id + '.json',
-                    headers: {
-                         'Authorization': 'Basic ' + config.ZendeskAPI_Key(),
-                        'Content-Type':  'application/json'
-                    }
-                }
-    
-                axios(request_params)
-                .then(function(response){
-                     resolve(response.data.organization.name)
-                })
-                .catch(function (){
-                    resolve("Error resolving Org Name")
-                })
-        });
-    }
-
 
 }
   
