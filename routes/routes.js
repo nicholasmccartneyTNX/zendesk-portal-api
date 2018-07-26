@@ -15,6 +15,17 @@ var appRouter = function (app) {
 
     });
 
+    app.get('/getRRTickets/:org', function (req, res) {
+
+        let org = req.params.org
+        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:' + org
+        
+        getTicketsPagination(url)
+        .then (result => parseRefreshTickets(result))
+        .then (resolved_result => res.status(200).send(resolved_result))
+        .catch (error => res.status(500).send(error))
+    });
+
 
     app.get('/getTicketComments/:id', function (req, res) {
 
@@ -42,6 +53,28 @@ var appRouter = function (app) {
             res.status(500).send("Error")
         });
         
+    });
+
+    app.get('/HCOs', function (req, res){
+        let url = config.ZendeskAPI() + '/search.json?query=type:organization tags:hco'
+
+        let request_params ={
+            method: 'GET',
+            url: url,
+            headers: {
+                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
+                'Content-Type':  'application/json'
+            }
+        }
+
+        axios(request_params)
+        .then(function(response){
+            let response_json = response.data.results;
+            res.status(200).send(response_json)
+        })
+        .catch(function() {
+            res.status(500).send("Error")
+        });
     });
 
     
@@ -89,6 +122,7 @@ var appRouter = function (app) {
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
 
+
                 if (requester_email == null){
                     requester_email = "Error finding requester email"
                 }
@@ -99,6 +133,49 @@ var appRouter = function (app) {
                 
 
                 json_resolved.push({id, subject, requester_email, organization_name, status})
+            }
+
+            return(JSON.stringify(json_resolved))
+
+        }catch (e){
+            return e
+        }
+        
+    }
+
+    async function parseRefreshTickets(data) {
+        try{    
+            json = data
+            let json_resolved = []
+
+            lookupDictionary = await getLookupDictionary(json)
+
+            for (i = 0; i < json.length; i ++) { 
+                id = json[i]["id"]
+                subject = json[i]["subject"]
+                status = json[i]["status"]    
+                requester_email =  lookupDictionary[json[i]["requester_id"]]
+                organization_name =  lookupDictionary[json[i]["organization_id"]]
+                patient_count = json[i]["fields"][4]["value"]
+                refresh_date = json[i]["fields"][3]["value"]
+
+                if (requester_email == null){
+                    requester_email = "Error finding requester email"
+                }
+
+                if (organization_name == null){
+                    organization_name = "Error finding organization name"
+                }
+
+                if (patient_count == null){
+                    patient_count = ""
+                }
+
+                if (refresh_date == null){
+                    refresh_date = ""
+                }                
+
+                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count})
             }
 
             return(JSON.stringify(json_resolved))
