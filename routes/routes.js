@@ -118,7 +118,9 @@ var appRouter = function (app) {
             for (i = 0; i < json.length; i ++) { 
                 id = json[i]["id"]
                 subject = json[i]["subject"]
-                status = json[i]["status"]    
+                status = json[i]["status"]  
+                created_at_unformatted = new Date(json[i]["created_at"])
+                created_at = created_at_unformatted.toLocaleDateString("en-US")
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
 
@@ -132,7 +134,7 @@ var appRouter = function (app) {
                 }
                 
 
-                json_resolved.push({id, subject, requester_email, organization_name, status})
+                json_resolved.push({id, subject, requester_email, organization_name, status, created_at})
             }
 
             return(JSON.stringify(json_resolved))
@@ -156,6 +158,8 @@ var appRouter = function (app) {
                 status = json[i]["status"]    
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
+                created_at_unformatted = new Date(json[i]["created_at"])
+                created_at = created_at_unformatted.toLocaleDateString("en-US")
                 patient_count = json[i]["fields"][4]["value"]
                 refresh_date = json[i]["fields"][3]["value"]
 
@@ -169,13 +173,18 @@ var appRouter = function (app) {
 
                 if (patient_count == null){
                     patient_count = ""
+                } else{
+                    patient_count = parseFloat(patient_count).toLocaleString('en')
                 }
 
                 if (refresh_date == null){
                     refresh_date = ""
-                }                
+                }else{
+                    refresh_date_unformatted = new Date(json[i]["created_at"])
+                    refresh_date = created_at_unformatted.toLocaleDateString("en-US")
+                }
 
-                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count})
+                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count, created_at})
             }
 
             return(JSON.stringify(json_resolved))
