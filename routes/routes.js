@@ -18,7 +18,7 @@ var appRouter = function (app) {
     app.get('/getRRTickets/:org', function (req, res) {
 
         let org = req.params.org
-        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:' + org
+        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:"' + org + '"'
         
         getTicketsPagination(url)
         .then (result => parseRefreshTickets(result))
@@ -118,7 +118,9 @@ var appRouter = function (app) {
             for (i = 0; i < json.length; i ++) { 
                 id = json[i]["id"]
                 subject = json[i]["subject"]
-                status = json[i]["status"]    
+                status = json[i]["status"]  
+                created_at_unformatted = new Date(json[i]["created_at"])
+                created_at = created_at_unformatted.toLocaleDateString("en-US")
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
 
@@ -132,7 +134,7 @@ var appRouter = function (app) {
                 }
                 
 
-                json_resolved.push({id, subject, requester_email, organization_name, status})
+                json_resolved.push({id, subject, requester_email, organization_name, status, created_at})
             }
 
             return(JSON.stringify(json_resolved))
@@ -156,8 +158,14 @@ var appRouter = function (app) {
                 status = json[i]["status"]    
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
+                created_at_unformatted = new Date(json[i]["created_at"])
                 patient_count = json[i]["fields"][4]["value"]
-                refresh_date = json[i]["fields"][3]["value"]
+
+                if (json[i]["fields"][3]["value"] != null){
+                    refresh_date_unformatted = new Date(json[i]["fields"][3]["value"])
+                } else {
+                    refresh_date_unformatted = null
+                }
 
                 if (requester_email == null){
                     requester_email = "Error finding requester email"
@@ -169,13 +177,27 @@ var appRouter = function (app) {
 
                 if (patient_count == null){
                     patient_count = ""
+                } else{
+                    patient_count = parseFloat(patient_count).toLocaleString('en')
                 }
 
-                if (refresh_date == null){
+                if (refresh_date_unformatted == null){
                     refresh_date = ""
-                }                
+                }else{
+                    var options = {}
+                    options.timeZone = "UTC"
+                    refresh_date = refresh_date_unformatted.toLocaleDateString("en-US", options)
+                }
 
-                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count})
+                if (created_at_unformatted == null){
+                    created_at = ""
+                }else{
+                    var options = {}
+                    options.timeZone = "UTC"
+                    created_at = created_at_unformatted.toLocaleDateString("en-US", options)
+                }
+
+                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count, created_at})
             }
 
             return(JSON.stringify(json_resolved))
@@ -297,7 +319,15 @@ var appRouter = function (app) {
                 id = json[i]["author_id"]
                 public = json[i]["public"].toString()
                 body = json[i]["body"]
-                created_at = json[i]["created_at"]
+                created_at_unformatted =  new Date(json[i]["created_at"])
+
+                if (created_at_unformatted == null){
+                    created_at = ""
+                }else{
+                    var options = {hour: "2-digit", minute: "2-digit"}
+                    options.timeZone = "America/New_York"
+                    created_at = created_at_unformatted.toLocaleDateString("en-US", options)
+                }
         
                 author_email = await resolveUserID(id)
                     
