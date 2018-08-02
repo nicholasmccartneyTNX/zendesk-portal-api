@@ -18,7 +18,7 @@ var appRouter = function (app) {
     app.get('/getRRTickets/:org', function (req, res) {
 
         let org = req.params.org
-        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:' + org
+        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:"' + org + '"'
         
         getTicketsPagination(url)
         .then (result => parseRefreshTickets(result))
@@ -160,7 +160,12 @@ var appRouter = function (app) {
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
                 created_at_unformatted = new Date(json[i]["created_at"])
                 patient_count = json[i]["fields"][4]["value"]
-                refresh_date_unformatted = new Date(json[i]["fields"][3]["value"])
+
+                if (json[i]["fields"][3]["value"] != null){
+                    refresh_date_unformatted = new Date(json[i]["fields"][3]["value"])
+                } else {
+                    refresh_date_unformatted = null
+                }
 
                 if (requester_email == null){
                     requester_email = "Error finding requester email"
