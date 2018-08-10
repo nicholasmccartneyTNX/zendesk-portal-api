@@ -26,6 +26,54 @@ var appRouter = function (app) {
         .catch (error => res.status(500).send(error))
     });
 
+    app.get('/getHCOInfo/:org', function (req, res) {
+
+        let org = req.params.org
+        let url = config.ZendeskAPI() + '/search.json?query=type:organization%20name:"' + org + '"'
+
+        let request_params ={
+            method: 'GET',
+            url: url,
+            headers: {
+                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
+                'Content-Type':  'application/json'
+            }
+        }
+
+        axios(request_params)
+        .then(function(response){
+            let response_json = response.data.results;
+            res.status(200).send(response_json)
+        })
+        .catch(function() {
+            res.status(500).send("Error")
+        });
+    })
+
+    app.get('/getHCOUsers/:org', function (req, res) {
+
+        let org = req.params.org
+        let url = config.ZendeskAPI() + '/search.json?query=type:organization%20name:"' + org + '"'
+
+        let request_params ={
+            method: 'GET',
+            url: url,
+            headers: {
+                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
+                'Content-Type':  'application/json'
+            }
+        }
+
+        axios(request_params)
+        .then(function(response){
+            let response_json = response.data.results;
+            res.status(200).send(response_json)
+        })
+        .catch(function() {
+            res.status(500).send("Error")
+        });
+    })
+
 
     app.get('/getTicketComments/:id', function (req, res) {
 
@@ -55,7 +103,7 @@ var appRouter = function (app) {
         
     });
 
-    app.get('/HCOs', function (req, res){
+    app.get('/HCOs', function (req, res) {
         let url = config.ZendeskAPI() + '/search.json?query=type:organization tags:hco'
 
         let request_params ={
@@ -75,6 +123,30 @@ var appRouter = function (app) {
         .catch(function() {
             res.status(500).send("Error")
         });
+    });
+
+    app.get('/users', function (req, res) {
+        //let org = req.params.org
+        let url = config.ZendeskAPI() + '/search.json?query=type:user tags:refresh_admin tags:refresh_cc tags:admin'
+
+        let request_params ={
+            method: 'GET',
+            url: url,
+            headers: {
+                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
+                'Content-Type':  'application/json'
+            }
+        }
+
+        axios(request_params)
+        .then(function(response){
+            let response_json = response.data.results;
+            res.status(200).send(response_json)
+        })
+        .catch(function() {
+            res.status(500).send("Error")
+        });
+
     });
 
     
@@ -154,15 +226,32 @@ var appRouter = function (app) {
 
             for (i = 0; i < json.length; i ++) { 
                 id = json[i]["id"]
-                subject = json[i]["subject"]
-                status = json[i]["status"]    
+                subject = json[i]["subject"]  
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
                 created_at_unformatted = new Date(json[i]["created_at"])
-                patient_count = json[i]["fields"][4]["value"]
+                patient_count = json[i]["fields"][5]["value"]
+                status = json[i]["fields"][3]['value']  
+                
+                if (status === "refresh_successful") {
+                    status = "Successful";
+                } else if (status === "refresh_postponed") {
+                    status = "Postponed";
+                } else if (status === "refresh_cancelled") {
+                    status = "Cancelled"
+                }
 
-                if (json[i]["fields"][3]["value"] != null){
-                    refresh_date_unformatted = new Date(json[i]["fields"][3]["value"])
+
+
+
+                if (json[i]["fields"][4]["value"] != null){
+                    refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
+                } else {
+                    refresh_date_unformatted = null
+                }
+
+                if (json[i]["fields"][4]["value"] != null){
+                    refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
                 } else {
                     refresh_date_unformatted = null
                 }
@@ -197,7 +286,7 @@ var appRouter = function (app) {
                     created_at = created_at_unformatted.toLocaleDateString("en-US", options)
                 }
 
-                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count, created_at})
+                json_resolved.push({id, subject, requester_email, organization_name, refresh_date, patient_count, created_at, status})
             }
 
             return(JSON.stringify(json_resolved))
