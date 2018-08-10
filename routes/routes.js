@@ -231,6 +231,7 @@ var appRouter = function (app) {
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
                 created_at_unformatted = new Date(json[i]["created_at"])
                 patient_count = json[i]["fields"][5]["value"]
+<<<<<<< HEAD
                 status = json[i]["fields"][3]['value']  
                 
                 if (status === "refresh_successful") {
@@ -249,6 +250,8 @@ var appRouter = function (app) {
                 } else {
                     refresh_date_unformatted = null
                 }
+=======
+>>>>>>> upstream/master
 
                 if (json[i]["fields"][4]["value"] != null){
                     refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
@@ -267,6 +270,7 @@ var appRouter = function (app) {
                 if (patient_count == null){
                     patient_count = ""
                 } else{
+                    console.log (patient_count)
                     patient_count = parseFloat(patient_count).toLocaleString('en')
                 }
 
