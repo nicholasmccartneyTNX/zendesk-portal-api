@@ -159,10 +159,10 @@ var appRouter = function (app) {
                 requester_email =  lookupDictionary[json[i]["requester_id"]]
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
                 created_at_unformatted = new Date(json[i]["created_at"])
-                patient_count = json[i]["fields"][4]["value"]
+                patient_count = json[i]["fields"][5]["value"]
 
-                if (json[i]["fields"][3]["value"] != null){
-                    refresh_date_unformatted = new Date(json[i]["fields"][3]["value"])
+                if (json[i]["fields"][4]["value"] != null){
+                    refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
                 } else {
                     refresh_date_unformatted = null
                 }
@@ -178,6 +178,7 @@ var appRouter = function (app) {
                 if (patient_count == null){
                     patient_count = ""
                 } else{
+                    console.log (patient_count)
                     patient_count = parseFloat(patient_count).toLocaleString('en')
                 }
 
