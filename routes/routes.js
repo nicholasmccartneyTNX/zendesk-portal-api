@@ -50,31 +50,6 @@ var appRouter = function (app) {
         });
     })
 
-    app.get('/getHCOUsers/:org', function (req, res) {
-
-        let org = req.params.org
-        let url = config.ZendeskAPI() + '/search.json?query=type:organization%20name:"' + org + '"'
-
-        let request_params ={
-            method: 'GET',
-            url: url,
-            headers: {
-                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
-                'Content-Type':  'application/json'
-            }
-        }
-
-        axios(request_params)
-        .then(function(response){
-            let response_json = response.data.results;
-            res.status(200).send(response_json)
-        })
-        .catch(function() {
-            res.status(500).send("Error")
-        });
-    })
-
-
     app.get('/getTicketComments/:id', function (req, res) {
 
         let ticketid = req.params.id;
@@ -117,7 +92,7 @@ var appRouter = function (app) {
 
         axios(request_params)
         .then(function(response){
-            let response_json = response.data.results;
+            let response_json = response.data;
             res.status(200).send(response_json)
         })
         .catch(function() {
@@ -126,7 +101,9 @@ var appRouter = function (app) {
     });
 
     app.get('/users', function (req, res) {
-        //let org = req.params.org
+
+        let org = req.params.org
+
         let url = config.ZendeskAPI() + '/search.json?query=type:user tags:refresh_admin tags:refresh_cc tags:admin'
 
         let request_params ={
@@ -137,10 +114,10 @@ var appRouter = function (app) {
                 'Content-Type':  'application/json'
             }
         }
-
         axios(request_params)
         .then(function(response){
-            let response_json = response.data.results;
+            let response_json = response.data;
+            console.log(response)
             res.status(200).send(response_json)
         })
         .catch(function() {
@@ -231,7 +208,6 @@ var appRouter = function (app) {
                 organization_name =  lookupDictionary[json[i]["organization_id"]]
                 created_at_unformatted = new Date(json[i]["created_at"])
                 patient_count = json[i]["fields"][5]["value"]
-<<<<<<< HEAD
                 status = json[i]["fields"][3]['value']  
                 
                 if (status === "refresh_successful") {
@@ -241,17 +217,11 @@ var appRouter = function (app) {
                 } else if (status === "refresh_cancelled") {
                     status = "Cancelled"
                 }
-
-
-
-
                 if (json[i]["fields"][4]["value"] != null){
                     refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
                 } else {
                     refresh_date_unformatted = null
                 }
-=======
->>>>>>> upstream/master
 
                 if (json[i]["fields"][4]["value"] != null){
                     refresh_date_unformatted = new Date(json[i]["fields"][4]["value"])
@@ -270,7 +240,6 @@ var appRouter = function (app) {
                 if (patient_count == null){
                     patient_count = ""
                 } else{
-                    console.log (patient_count)
                     patient_count = parseFloat(patient_count).toLocaleString('en')
                 }
 
