@@ -106,23 +106,9 @@ var appRouter = function (app) {
 
         let url = config.ZendeskAPI() + '/search.json?query=type:user tags:refresh_admin tags:refresh_cc tags:admin'
 
-        let request_params ={
-            method: 'GET',
-            url: url,
-            headers: {
-                'Authorization': 'Basic '+ config.ZendeskAPI_Key(),
-                'Content-Type':  'application/json'
-            }
-        }
-        axios(request_params)
-        .then(function(response){
-            let response_json = response.data;
-            console.log(response)
-            res.status(200).send(response_json)
-        })
-        .catch(function() {
-            res.status(500).send("Error")
-        });
+        getTicketsPagination(url)
+        .then (result => res.status(200).send(result))
+        .catch (error => res.status(500).send(error))
 
     });
 
