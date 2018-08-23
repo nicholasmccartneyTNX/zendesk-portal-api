@@ -4,37 +4,30 @@ var config = require ('../config.js')
 
 var appRouter = function (app) {
 
-    app.get('/getDQTickets', function (req, res) {
- 
-        let url = config.ZendeskAPI() + '/search.json?query=tags:dataquality_dataissue'
-        
-        getTicketsPagination(url)
-        .then (result => parseTickets(result))
-        .then (resolved_result => res.status(200).send(resolved_result))
-        .catch (error => res.status(500).send(error))
+    app.get('/tickets/:type-:query', function (req, res) {
 
-    });
-
-    app.get('/getRRTickets/:org', function (req, res) {
-
-        let org = req.params.org
-        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 -tags:closed_by_merge organization:"' + org + '"'
-        
-        getTicketsPagination(url)
-        .then (result => parseRefreshTickets(result))
-        .then (resolved_result => res.status(200).send(resolved_result))
-        .catch (error => res.status(500).send(error))
-    });
-
-    app.get('/tickets/:querystring', function (req, res) {
-
-        let query = req.params.querystring;
+        let type = req.params.type;
+        let query = req.params.query;
         let url = config.ZendeskAPI() + '/search.json?query=' + query;
         
-        getTicketsPagination(url)
-        .then (result => parseTickets(result))
-        .then (resolved_result => res.status(200).send(resolved_result))
-        .catch (error => res.status(500).send(error))
+        if (type === 'refresh') {
+            getPagination(url)
+            .then (result => parseRefreshTickets(result))
+            .then (resolved_result => res.status(200).send(resolved_result))
+            .catch (error => res.status(500).send(error))
+        }
+        if (type === 'dq') {
+            getPagination(url)
+            .then (result => parseTickets(result))
+            .then (resolved_result => res.status(200).send(resolved_result))
+            .catch (error => res.status(500).send(error))
+        }
+        if (type === 'all') {
+            getPagination(url)
+            .then (result => parseTickets(result))
+            .then (resolved_result => res.status(200).send(resolved_result))
+            .catch (error => res.status(500).send(error))
+        }
     });
 
     app.get('/getHCOInfo/:org', function (req, res) {
@@ -117,14 +110,14 @@ var appRouter = function (app) {
 
         let url = config.ZendeskAPI() + '/search.json?query=type:user tags:refresh_admin tags:refresh_cc tags:admin'
 
-        getTicketsPagination(url)
+        getPagination(url)
         .then (result => res.status(200).send(result))
         .catch (error => res.status(500).send(error))
 
     });
 
     
-    function getTicketsPagination  (url, TicketPages = []) {
+    function getPagination  (url, TicketPages = []) {
         return new Promise(resolve => {
             let request_params ={
                 method: 'GET',
@@ -141,7 +134,7 @@ var appRouter = function (app) {
                 TicketPages = TicketPages.concat(JSON.parse(response_json))
                 let url = response.data.next_page
                 if (url != null){
-                    resolve(getTicketsPagination(url, TicketPages))
+                    resolve(getPagination(url, TicketPages))
                 }
                 else{
                     resolve(TicketPages)
