@@ -82,8 +82,11 @@ var appRouter = function (app) {
         
     });
 
-    app.get('/HCOs', function (req, res) {
-        let url = config.ZendeskAPI() + '/search.json?query=type:organization tags:hco'
+    app.get('/orgs/:type', function (req, res) {
+        let type = req.params.type
+
+        let query = (type === 'hco') ? '/search.json?query=type:organization tags:hco' : '/search.json?query=type:organization'
+        let url = config.ZendeskAPI() + query
 
         let request_params ={
             method: 'GET',
