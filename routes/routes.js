@@ -18,10 +18,21 @@ var appRouter = function (app) {
     app.get('/getRRTickets/:org', function (req, res) {
 
         let org = req.params.org
-        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 organization:"' + org + '"'
+        let url = config.ZendeskAPI() + '/search.json?query=tags:appliance_refresh_i2b2 tags:appliance_refresh_files tags:appliance_refresh_files_i2b2 -tags:closed_by_merge organization:"' + org + '"'
         
         getTicketsPagination(url)
         .then (result => parseRefreshTickets(result))
+        .then (resolved_result => res.status(200).send(resolved_result))
+        .catch (error => res.status(500).send(error))
+    });
+
+    app.get('/tickets/:querystring', function (req, res) {
+
+        let query = req.params.querystring;
+        let url = config.ZendeskAPI() + '/search.json?query=' + query;
+        
+        getTicketsPagination(url)
+        .then (result => parseTickets(result))
         .then (resolved_result => res.status(200).send(resolved_result))
         .catch (error => res.status(500).send(error))
     });
